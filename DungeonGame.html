@@ -1,0 +1,200 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Dungeon of Syntax (Simple)</title>
+</head>
+<body>
+<script>
+// Dungeon of Syntax - simple beginner version
+
+// Helper: get a safe prompt (returns empty string if user cancels)
+function safePrompt(message) {
+  var ans = prompt(message);
+  if (ans === null) return ""; // user pressed Cancel
+  return ans.trim();
+}
+
+// Helper: random integer between min and max (inclusive)
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// Helper: remove one occurrence of value from array
+function removeOne(array, value) {
+  var i = array.indexOf(value);
+  if (i !== -1) array.splice(i, 1);
+}
+
+// Game variables
+var playerName = safePrompt("Enter your name:");
+if (playerName === "") playerName = "Player";
+
+var health = 100;
+var gold = 50;
+var inventory = ["sword"]; // starting item
+var activeEffects = []; // holds "shield" or "amulet" when used
+
+var isGameOver = false;
+
+// Display current status in a simple message
+function displayStatus() {
+  var invText = inventory.length > 0 ? inventory.join(", ") : "none";
+  var effectsText = activeEffects.length > 0 ? activeEffects.join(", ") : "none";
+  alert(
+    "Name: " + playerName +
+    "\nHealth: " + health +
+    "\nGold: " + gold +
+    "\nInventory: " + invText +
+    "\nActive effects: " + effectsText
+  );
+}
+
+// The battle with a monster
+function battleMonster() {
+  var monsters = ["Goblin", "Skeleton", "Orc"];
+  var monster = monsters[randomInt(0, monsters.length - 1)];
+  var monsterHealth = randomInt(20, 40);
+
+  alert("A " + monster + " appears!");
+
+  while (monsterHealth > 0 && health > 0) {
+    var action = safePrompt(
+      monster + " - Monster HP: " + monsterHealth +
+      "\nYou - HP: " + health +
+      "\nWhat do you do? (type 'attack' or 'run')"
+    ).toLowerCase();
+
+    if (action.indexOf("attack") === 0 || action.indexOf("a") === 0) {
+      // Player attacks
+      var damage = randomInt(5, 15);
+      // If amulet is active, add +5 damage once, then remove it
+      if (activeEffects.indexOf("amulet") !== -1) {
+        damage += 5;
+        removeOne(activeEffects, "amulet");
+        alert("Your amulet glows! +5 extra damage (amulet used).");
+      }
+      monsterHealth -= damage;
+      alert("You hit the " + monster + " for " + damage + " damage.");
+
+      // Monster retaliates if still alive
+      if (monsterHealth > 0) {
+        var monsterDamage = randomInt(5, 12);
+        // If shield is active, halve the damage (rounded down), then remove shield
+        if (activeEffects.indexOf("shield") !== -1) {
+          monsterDamage = Math.floor(monsterDamage / 2);
+          removeOne(activeEffects, "shield");
+          alert("Your shield blocks some damage (shield used).");
+        }
+        health -= monsterDamage;
+        alert(monster + " hits you for " + monsterDamage + " damage.");
+      }
+    } else if (action.indexOf("run") === 0 || action.indexOf("r") === 0) {
+      alert("You ran away from the " + monster + "!");
+      return; // exit the battle
+    } else {
+      alert("Type 'attack' or 'run'.");
+    }
+  }
+
+  // After the fight
+  if (health <= 0) {
+    alert("You were defeated by the " + monster + ". Game Over.");
+    isGameOver = true;
+    return;
+  } else {
+    var reward = randomInt(10, 30);
+    gold += reward;
+    alert("You defeated the " + monster + "! You found " + reward + " gold.");
+  }
+}
+
+// Open a chest and get a random item
+function openChest() {
+  var options = ["potion", "shield", "amulet"];
+  var item = options[randomInt(0, options.length - 1)];
+  inventory.push(item);
+  alert("You opened a chest and found a " + item + "!");
+}
+
+// Use an item from inventory
+function useItem() {
+  if (inventory.length === 0) {
+    alert("You have no items to use.");
+    return;
+  }
+
+  // Show numbered list to choose from
+  var listText = "Choose an item to use (type the number):\n";
+  for (var i = 0; i < inventory.length; i++) {
+    listText += (i+1) + ") " + inventory[i] + "\n";
+  }
+  var choiceText = safePrompt(listText);
+  var choice = parseInt(choiceText, 10);
+
+  if (isNaN(choice) || choice < 1 || choice > inventory.length) {
+    alert("Invalid choice.");
+    return;
+  }
+
+  var selected = inventory[choice - 1];
+
+  if (selected === "potion") {
+    health += 20;
+    if (health > 100) health = 100; // cap health at 100
+    alert("You used a potion. +20 health (capped at 100).");
+  } else if (selected === "shield") {
+    activeEffects.push("shield");
+    alert("You used a shield. It will halve the next incoming monster damage.");
+  } else if (selected === "amulet") {
+    activeEffects.push("amulet");
+    alert("You used an amulet. Your next attack does +5 damage.");
+  } else {
+    alert("That item can't be used right now.");
+  }
+
+  // Remove the used item from inventory (first occurrence)
+  removeOne(inventory, selected);
+}
+
+// MAIN GAME LOOP
+alert("Welcome, " + playerName + "! Enter the Dungeon of Syntax.");
+while (health > 0 && !isGameOver) {
+  // Random event: monster, chest, or nothing
+  var eventOptions = ["monster", "chest", "nothing"];
+  var event = eventOptions[randomInt(0, eventOptions.length - 1)];
+
+  if (event === "monster") {
+    battleMonster();
+    if (isGameOver) break;
+  } else if (event === "chest") {
+    openChest();
+  } else {
+    alert("The room is empty.");
+  }
+
+  displayStatus();
+
+  // Ask player what to do next
+  var next = safePrompt("What next? Type: 'continue', 'use item', or 'quit'").toLowerCase();
+
+  if (next.indexOf("use") === 0 || next.indexOf("u") === 0) {
+    useItem();
+  } else if (next.indexOf("quit") === 0 || next.indexOf("q") === 0) {
+    alert("You leave the dungeon with your loot. Goodbye!");
+    break;
+  } else {
+    // any other answer -> continue to next room
+    // loop continues
+  }
+}
+
+// End of game summary
+if (health > 0 && !isGameOver) {
+  alert("Game ended. Final status:\nName: " + playerName + "\nHealth: " + health + "\nGold: " + gold);
+} else if (isGameOver) {
+  alert("Final status: You died. Gold collected: " + gold);
+}
+</script>
+</body>
+</html>
